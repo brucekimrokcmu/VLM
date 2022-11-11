@@ -16,14 +16,17 @@ import wandb
 import sys
 from os.path import join, dirname, abspath, isfile
 
+
+from utils import AverageMeter, sec_to_str, FormatInput
+
 CURRENT_DIR = dirname(abspath(__file__))
 sys.path.insert(0, join(CURRENT_DIR, '../..'))  # Import local models
-from src.models.clipport import ClipPort6D
+# from src.models.clipport import ClipPort6D
+from src.ref_cliport.agent import BlindLangAgent_6Dof, ImgDepthAgent_6dof, TwoStreamClipLingUNetLatTransporterAgent
 warnings.filterwarnings('ignore')
 
 # Import helper funtions
 from src.dataloader.VLDataloader import VLM_dataset
-from src.dataloader.utils import AverageMeter, sec_to_str, FormatInput
 
 def collate_fn(batch):
     return batch
@@ -47,14 +50,29 @@ def main(args):
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, 
                                             pin_memory=args.pin_memory, drop_last=True, collate_fn = collate_fn, persistent_workers=True)
     
-    # TODO: define configurations for model
-    model_config = {}
-    # TODO: Call model
-    model = ClipPort6D(model_config, device=device)
-    model.to(device)
+    #
+
+    ### BEGIN REF
+    cfg = {
+            'train':{
+                'attn_stream_fusion_type': 'add',
+                'trans_stream_fusion_type': 'conv',
+                'lang_fusion_type': 'mult',
+                'n_rotations':36,
+                'batchnorm':False
+            }
+        }
+    
+    model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
+    ### END REF
+    # # TODO: define configurations for model
+    # model_config = {}
+    # # TODO: Call model
+    # model = ClipPort6D(model_config, device=device)
+    # model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), args.lr)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-
+    
     # if resuming training, load states
     if args.resume:
         if os.path.isfile(args.resume):
@@ -140,6 +158,8 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer):
         if inp is None: pass
         
         # propogate forwards
+
+        print("train step", i)
         loss_dict = model(inp)
 
         if losses == {}:
@@ -179,6 +199,7 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer):
     
 def val(data_loader, model, args, epoch):
 
+    print("in valS step")
     model.eval()
     losses= {}
     total_loss = []
@@ -236,6 +257,7 @@ if __name__=="__main__":
     parser.add_argument('--resume', default= None, type=str, help='use to resume training from checkpoint-path/model-best.pth')
     parser.add_argument('--wandb_entity', type=str, default="11785-vlm", help="visualize the training. Account Name")
     parser.add_argument('--wandb_project', type=str, default="11785-Final-Project",  help="visualize the training. Project Name")
+    parser.add_argument('--wandb_key', type=str, default="11785-Final-Project",  help="visualize the training. Project Name")
 
     args = parser.parse_args()
     
