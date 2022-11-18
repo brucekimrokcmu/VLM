@@ -20,8 +20,7 @@ from utils import AverageMeter, sec_to_str, FormatInput
 
 CURRENT_DIR = dirname(abspath(__file__))
 sys.path.insert(0, join(CURRENT_DIR, '../..'))  # Import local models
-from models.PickModel import PickModel
-from models.PlaceModel import PlaceModel
+from agents.PickAgent import PickAgent
 warnings.filterwarnings('ignore')
 
 # Import helper funtions
@@ -33,8 +32,8 @@ def collate_fn(batch):
 def main(args):
     
     # set up device
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print("Using device: ", device)
+    assert torch.cuda.is_available(), "CUDA required by CLIP model"
+    device = 'cuda'
     cudnn.benchmark = True
 
     # load data
@@ -42,36 +41,17 @@ def main(args):
                     use_fail_cases = args.use_fail_cases, sample_numbers = args.sample_numbers, train_tasks=args.train_tasks, args=args)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.workers, 
                                             pin_memory=args.pin_memory, drop_last=True, collate_fn = collate_fn, persistent_workers=True)
-    del train_dataset
-    gc.collect()
 
     val_dataset = VLM_dataset(args.data_dir, 'valid', img_size=args.img_size, unused_camera_list = args.unused_camera_list, preprocess = args.preprocess, 
                     use_fail_cases = args.use_fail_cases, sample_numbers = args.sample_numbers, train_tasks=args.train_tasks, args=args)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.workers, 
                                             pin_memory=args.pin_memory, drop_last=True, collate_fn = collate_fn, persistent_workers=True)
-    del val_dataset
-    gc.collect()
     
-    if len(val_loader)==0:
-        print("ERROR: Empty data loader")
-        return
-    if len(val_loader)==0:
-        print("ERROR: Empty validation loader")
-        return
+    assert len(train_loader)>0, "ERROR: Empty train loader"
+    assert len(val_loader)>0, "ERROR: Empty val loader"
 
-
-    # BEGIN REF
-    cfg = {
-            'train':{
-                'attn_stream_fusion_type': 'add',
-                'trans_stream_fusion_type': 'conv',
-                'lang_fusion_type': 'mult',
-                'n_rotations':36,
-                'batchnorm':False
-            }
-        }
         
-    model = PickModel(num_rotations = 16)
+    pick_agent = PickAgent(num_rotations = 36, lr=args.lr)
 
     # model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
     # END REF
@@ -80,8 +60,6 @@ def main(args):
     # # TODO: Call model
     # model = ClipPort6D(model_config, device=device)
     # model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), args.lr)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
     
     # if resuming training, load states
     if args.resume:
@@ -167,16 +145,19 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer, 
     for i, batch_data in enumerate(data_loader):
         
         inp = FormatInput(batch_data)
-        if inp is None: pass
+        if inp is None:
+            print("Warning: Formatted sample is none. Skipping sample.")
+            continue
+        loss_dict = pick_agent.train(inp)
         
         # propogate forwards
         # loss_dict = model(inp)
-        loss_dict = {"attention_loss": torch.tensor(1.0),
-                    "xy_loss": torch.tensor(1.0),
-                    "z_loss": torch.tensor(1.0),
-                    "roll_loss": torch.tensor(1.0),
-                    "pitch_losses": torch.tensor(1.0)
-                    }
+        # loss_dict = {"attention_loss": torch.tensor(1.0),
+        #             "xy_loss": torch.tensor(1.0),
+        #             "z_loss": torch.tensor(1.0),
+        #             "roll_loss": torch.tensor(1.0),
+        #             "pitch_losses": torch.tensor(1.0)
+        #             }
 
         if losses == {}:
             for loss_term in loss_dict:
@@ -184,13 +165,6 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer, 
 
         for loss_term in loss_dict:
             losses[loss_term].update(loss_dict[loss_term].item(), args.batch_size)
-        
-        # propogate backwards
-        loss = sum(l for l in loss_dict.values())
-        optimizer.zero_grad()
-        # loss.backward()
-        optimizer.step()
-        scheduler.step(loss)
 
         # update time tracking
         batch_time.update(time.time() - end)
@@ -257,6 +231,7 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description='')
     ## Maintained most arguments from VLMbench
     #Dataset processing
+    #add num rot
     parser.add_argument('--data_dir', type=str, default='/dataset', help='directory of data')
     parser.add_argument('--img_size',nargs='+', type=int, default=[224, 224], help='size of dataset images (default: [224,224]])')
     parser.add_argument('--batch_size', type=int, default=2, metavar='N', help='batch size for training (default: 16)')
