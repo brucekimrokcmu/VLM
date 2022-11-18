@@ -20,8 +20,8 @@ from utils import AverageMeter, sec_to_str, FormatInput
 
 CURRENT_DIR = dirname(abspath(__file__))
 sys.path.insert(0, join(CURRENT_DIR, '../..'))  # Import local models
-# from src.models.clipport import ClipPort6D
-from src.ref_cliport.agent import BlindLangAgent_6Dof, ImgDepthAgent_6dof, TwoStreamClipLingUNetLatTransporterAgent
+from models.PickModel import PickModel
+from models.PlaceModel import PlaceModel
 warnings.filterwarnings('ignore')
 
 # Import helper funtions
@@ -70,8 +70,10 @@ def main(args):
                 'batchnorm':False
             }
         }
-    
-    model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
+        
+    model = PickModel(num_rotations = 16)
+
+    # model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
     # END REF
     # # TODO: define configurations for model
     # model_config = {}
