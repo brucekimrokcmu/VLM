@@ -5,6 +5,7 @@ Copyright (c) 2022 UCSC ERIC Lab
 
 The utilities below used substantial portions of https://github.com/eric-ai-lab/VLMbench.git
 """
+import torch
 import datetime
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -81,8 +82,10 @@ def convert_angle_to_channel(angle_deg, num_rotations):
     return i
 
 def get_affordance_map_from_formatted_input(x, y, rotation_deg, output_size):
-    num_rotations = output_size.shape[0]
+    num_rotations = output_size[0]
     rotation_channel = convert_angle_to_channel(rotation_deg, num_rotations)
     affordance_map = torch.zeros(output_size)
+    print(x)
+    print(y)
     affordance_map[rotation_channel, x, y] = 1
     return affordance_map

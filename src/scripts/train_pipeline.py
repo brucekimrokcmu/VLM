@@ -51,7 +51,7 @@ def main(args):
     assert len(val_loader)>0, "ERROR: Empty val loader"
 
         
-    pick_agent = PickAgent(num_rotations = 36, lr=args.lr)
+    agent = PickAgent(num_rotations = 36, lr=args.lr)
 
     # model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
     # END REF
@@ -59,7 +59,7 @@ def main(args):
     # model_config = {}
     # # TODO: Call model
     # model = ClipPort6D(model_config, device=device)
-    # model.to(device)
+    agent.model = agent.model.to(device)
     
     # if resuming training, load states
     if args.resume:
@@ -67,7 +67,7 @@ def main(args):
             print("Loading checkpoint from'{}'".format(args.resume))
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'])
+            agent.model.load_state_dict(checkpoint['state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             scheduler.load_state_dict(checkpoint['scheduler'])
             del checkpoint
@@ -91,11 +91,11 @@ def main(args):
     for epoch in range(args.start_epoch, args.epochs):
 
         # train for one epoch
-        acc_losses, acc_avg_loss = train(train_loader, model, optimizer, scheduler, epoch, losses, args, timer, device)
+        acc_losses, acc_avg_loss = train(train_loader, agent, epoch, losses, args, timer, device)
         acc_loss_dict = {'acc_'+l_t:l.avg for l_t,l in acc_losses.items()}
         
-        # evaluate model
-        val_losses, val_avg_loss = val(val_loader, model, args, epoch, device)
+        # evaluate agent
+        val_losses, val_avg_loss = val(val_loader, agent, args, epoch, device)
         val_loss_dict = {'val_'+l_t:l.avg for l_t,l in val_losses.items()}
         
         # log to WandB
@@ -109,18 +109,18 @@ def main(args):
             best_val_loss = val_avg_loss
             torch.save({
                 'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-                'optimizer' : optimizer.state_dict(),
-                'scheduler':scheduler.state_dict(),
+                'state_dict': agent.model.state_dict(),
+                'optimizer' : agent.optimizer.state_dict(),
+                'scheduler':agent.scheduler.state_dict(),
                 'train_tasks': args.train_tasks
                 }, save_name + '_best'+ '.pth')
             print("New best model saved")
         if (epoch+1)%5==0:
             torch.save({
                 'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-                'optimizer' : optimizer.state_dict(),
-                'scheduler':scheduler.state_dict(),
+                'state_dict': agent.model.state_dict(),
+                'optimizer' : agent.optimizer.state_dict(),
+                'scheduler':agent.scheduler.state_dict(),
                 'train_tasks': args.train_tasks
                 }, save_name + f"_epoch{epoch}" + '.pth')
             print("Checkpoint model saved")
@@ -133,9 +133,7 @@ def main(args):
         wandb.save( save_name + '_best' + '.pth' )
         wandb.finish()
 
-def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer, device):
-
-    model.train()
+def train(data_loader, agent, epoch, losses, args, timer, device):
     batch_time = timer["batch_time"]
     
     loss_dict = {}
@@ -143,12 +141,11 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer, 
     
     end = time.time()
     for i, batch_data in enumerate(data_loader):
-        
         inp = FormatInput(batch_data)
         if inp is None:
             print("Warning: Formatted sample is none. Skipping sample.")
             continue
-        loss_dict = pick_agent.train(inp)
+        loss_dict = agent.train_agent(inp)
         
         # propogate forwards
         # loss_dict = model(inp)
@@ -188,9 +185,9 @@ def train(data_loader, model, optimizer, scheduler, epoch, losses, args, timer, 
     return losses, avg_loss
    
     
-def val(data_loader, model, args, epoch, device):
+def val(data_loader, agent, args, epoch, device):
 
-    model.eval()
+    agent.model.eval()
     losses= {}
     total_loss = []
 
@@ -233,8 +230,8 @@ if __name__=="__main__":
     #Dataset processing
     #add num rot
     parser.add_argument('--data_dir', type=str, default='/dataset', help='directory of data')
-    parser.add_argument('--img_size',nargs='+', type=int, default=[224, 224], help='size of dataset images (default: [224,224]])')
-    parser.add_argument('--batch_size', type=int, default=2, metavar='N', help='batch size for training (default: 16)')
+    parser.add_argument('--img_size',nargs='+', type=int, default=(224, 224), help='size of dataset images (default: [224,224]])')
+    parser.add_argument('--batch_size', type=int, default=1, metavar='N', help='batch size for training (default: 1)')
     parser.add_argument('--workers', type=int, default=32, help='number of workers  (default: 32)')
     parser.add_argument('--preprocess', action='store_true', help="whether to use preprocess the data")
     parser.add_argument('--unused_camera_list', nargs='+', default=[None], help='list of cameras to not use (default: [None])')

@@ -83,6 +83,7 @@ class SpatialStream(nn.Module):
 
     def forward(self, rgb_ddd_img):
       # Conv
+
       out = self.conv(rgb_ddd_img)
       #Encoder
       for encode in [self.encoder1, self.encoder2, self.encoder3, self.encoder4, self.encoder5, self.encoder6]:
