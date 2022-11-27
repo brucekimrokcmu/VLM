@@ -72,9 +72,6 @@ class SemanticStream(nn.Module):
         layer1, layer2, layer3, layer4 = self.clip_model(rgb_image.half())
 
         x = self.conv1(layer4)
-        print('type: ', type(lang_tile1))
-        print('shape of x         : ', x.shape)
-        print('shape of lang_tile1: ', lang_tile1.shape)
         x = x * lang_tile1
         x = self.up_block1(x, layer3)
 

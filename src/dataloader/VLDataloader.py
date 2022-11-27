@@ -301,6 +301,14 @@ class VLM_dataset(Dataset):
         cmaps = np.stack(cmaps, axis=0)
         hmaps = np.tile((np.stack(hmaps, axis=0))[..., None], (1,1,1,3))
         img = np.concatenate([cmaps, hmaps], axis=-1)
+
+        if(img.shape[1:3]!=self.img_size):
+            # print(img.shape[1:3], self.img_size, self.img_size[0]-img.shape[1], self.img_size[1]-img.shape[2])
+            pad = ((0,0),(0, self.img_size[0]-img.shape[1]),(0, self.img_size[1]-img.shape[2]),(0,0))
+            # print(pad)
+            img = np.pad(img, pad, 'constant', constant_values=(0,)) 
+
+        # print("PADDED IMAGE SIZE: ", img.shape)
         attention_points = np.stack(attention_points, axis=0)
         target_points = np.stack(target_points, axis=0)
         output_dict = {

@@ -14,6 +14,7 @@ import torch.nn.functional as F
 import sys
 import gc
 from os.path import join, dirname, abspath, isfile
+import traceback
 
 
 from utils import AverageMeter, sec_to_str, FormatInput
@@ -51,7 +52,7 @@ def main(args):
     assert len(val_loader)>0, "ERROR: Empty val loader"
 
         
-    agent = PickAgent(num_rotations = 36, lr=args.lr)
+    agent = PickAgent(num_rotations = 8, lr=args.lr)
 
     # model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
     # END REF
@@ -68,8 +69,8 @@ def main(args):
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             agent.model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            scheduler.load_state_dict(checkpoint['scheduler'])
+            # optimizer.load_state_dict(checkpoint['optimizer'])
+            # scheduler.load_state_dict(checkpoint['scheduler'])
             del checkpoint
             gc.collect()
             torch.cuda.empty_cache()
@@ -100,7 +101,11 @@ def main(args):
         
         # log to WandB
         if args.wandb:
-            wandb.log({**acc_loss_dict, **val_loss_dict, 'acc_loss':acc_avg_loss, 'val_loss':val_avg_loss},step=epoch)
+            # wandb.log({**acc_loss_dict, **val_loss_dict, 'acc_loss':acc_avg_loss, 'val_loss':val_avg_loss},step=epoch)
+            try:
+                wandb.log({**acc_loss_dict, **val_loss_dict, 'acc_loss':acc_avg_loss, 'val_loss':val_avg_loss},step=epoch)
+            except Exception as e:
+                print(traceback.print_exc(), file=sys.stderr)
 
         # save the model
         save_name = args.checkpoint_path+'/checkpoint_{}'.format(args.checkpoint_name)
@@ -111,7 +116,7 @@ def main(args):
                 'epoch': epoch + 1,
                 'state_dict': agent.model.state_dict(),
                 'optimizer' : agent.optimizer.state_dict(),
-                'scheduler':agent.scheduler.state_dict(),
+                # 'scheduler':agent.scheduler.state_dict(),
                 'train_tasks': args.train_tasks
                 }, save_name + '_best'+ '.pth')
             print("New best model saved")
@@ -120,18 +125,26 @@ def main(args):
                 'epoch': epoch + 1,
                 'state_dict': agent.model.state_dict(),
                 'optimizer' : agent.optimizer.state_dict(),
-                'scheduler':agent.scheduler.state_dict(),
+                # 'scheduler':agent.scheduler.state_dict(),
                 'train_tasks': args.train_tasks
                 }, save_name + f"_epoch{epoch}" + '.pth')
             print("Checkpoint model saved")
             if args.wandb:
-                wandb.save(save_name + f"_epoch{epoch}" + '.pth')
-                print("Checkpoint model saved to WandB")
-                os.remove(save_name + f"_epoch{epoch}" + '.pth')
+                try:
+                    wandb.save(save_name + f"_epoch{epoch}" + '.pth')
+                    print("Checkpoint model saved to WandB")
+                    os.remove(save_name + f"_epoch{epoch}" + '.pth')
+
+                except Exception as e:
+                    print(traceback.print_exc(), file=sys.stderr)
+            
 
     if args.wandb: 
-        wandb.save( save_name + '_best' + '.pth' )
-        wandb.finish()
+        try:
+            wandb.save( save_name + '_best' + '.pth' )
+            wandb.finish()
+        except Exception as e:
+            print(traceback.print_exc(), file=sys.stderr)
 
 def train(data_loader, agent, epoch, losses, args, timer, device):
     batch_time = timer["batch_time"]
@@ -145,7 +158,7 @@ def train(data_loader, agent, epoch, losses, args, timer, device):
         if inp is None:
             print("Warning: Formatted sample is none. Skipping sample.")
             continue
-        loss_dict = agent.train_agent(inp)
+        loss_dict['attention_loss'] = agent.train_agent(inp)
         
         # propogate forwards
         # loss_dict = model(inp)
@@ -229,16 +242,16 @@ if __name__=="__main__":
     ## Maintained most arguments from VLMbench
     #Dataset processing
     #add num rot
-    parser.add_argument('--data_dir', type=str, default='/dataset', help='directory of data')
+    parser.add_argument('--data_dir', type=str, default='/home/ubuntu/VLM/dataset/pick', help='directory of data')
     parser.add_argument('--img_size',nargs='+', type=int, default=(224, 224), help='size of dataset images (default: [224,224]])')
     parser.add_argument('--batch_size', type=int, default=1, metavar='N', help='batch size for training (default: 1)')
-    parser.add_argument('--workers', type=int, default=32, help='number of workers  (default: 32)')
+    parser.add_argument('--workers', type=int, default=4, help='number of workers  (default: 32)')
     parser.add_argument('--preprocess', action='store_true', help="whether to use preprocess the data")
     parser.add_argument('--unused_camera_list', nargs='+', default=[None], help='list of cameras to not use (default: [None])')
     parser.add_argument('--use_fail_cases', action='store_true', help="add if use the fail cases")
     parser.add_argument('--sample_numbers', type=int, default=0, help="if greater than 0, use to limit demonstrations (Default:0)")
     parser.add_argument('--pin_memory', action='store_true', help="do not use if the RAM is small")
-    parser.add_argument('--train_tasks', nargs='+', type=str, default = ["all"],
+    parser.add_argument('--train_tasks', nargs='+', type=str, default = ["pick"],
                         help="list of tasks to demonstrations (Default:all, options [all pick stack shape_sorter drop wipe pour door drawer])")
     parser.add_argument('--relative', default=False, help="whether to use related rotations to get clip port ground truth (default: False)")
     parser.add_argument('--renew_obs', default=True, help="whether to renew observations at every waypoint? (default: True)")
@@ -249,7 +262,7 @@ if __name__=="__main__":
     parser.add_argument('--epochs', default=15, type=int, help='total epochs(default: 15)')
     parser.add_argument('--log-freq', default=1, type=int, help='print log message at this many iterations (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate for Adam optimizer (default: 0.001)')
-    parser.add_argument('--checkpoint_path', default='/home/mrsd/IDL/VLM/checkpoint', type=str, metavar='PATH', help='path to latest checkpoint (default: /checkpoints)')
+    parser.add_argument('--checkpoint_path', default='/home/ubuntu/VLM/checkpoint', type=str, metavar='PATH', help='path to latest checkpoint (default: /checkpoints)')
     parser.add_argument('--checkpoint_name', default='model', type=str, metavar='NAME', help='unique name to identify the model (default: model)')
     parser.add_argument('--resume', default= None, type=str, help='use to resume training from checkpoint-path/model-best.pth')
     parser.add_argument('--wandb', action='store_true', help="whether or not to connect to WandB project")

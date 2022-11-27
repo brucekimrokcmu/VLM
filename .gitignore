@@ -133,4 +133,5 @@ dmypy.json
 
 # Ignore dataset
 dataset/
-
+checkpoint/
+wandb/
