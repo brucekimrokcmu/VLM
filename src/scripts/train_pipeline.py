@@ -133,10 +133,11 @@ def main(args):
                 try:
                     wandb.save(save_name + f"_epoch{epoch}" + '.pth')
                     print("Checkpoint model saved to WandB")
-                    os.remove(save_name + f"_epoch{epoch}" + '.pth')
 
                 except Exception as e:
                     print(traceback.print_exc(), file=sys.stderr)
+            
+            os.remove(save_name + f"_epoch{epoch}" + '.pth')
             
 
     if args.wandb: 
