@@ -1,7 +1,6 @@
 # Clone the vlm bench and VLM repos
 cd ~
 git clone https://github.com/eric-ai-lab/VLMbench.git
-git clone https://github.com/KevinGmelin/VLM.git
 
 # Get coppellia sim
 wget https://www.coppeliarobotics.com/files/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz
@@ -13,10 +12,10 @@ git clone https://github.com/stepjam/PyRep.git
 echo 'export COPPELIASIM_ROOT=~/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04' >> ~/.bashrc
 echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT' >> ~/.bashrc
 echo 'export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT' >> ~/.bashrc
-conda init bash
-source ~/.bashrc
+export COPPELIASIM_ROOT=~/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT
+export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
 cd PyRep/
-conda activate pytorch
 pip3 install -r requirements.txt
 pip3 install .
 cd ..
@@ -31,7 +30,6 @@ rm virtualgl*.deb
 
 # Install VLMbench
 cd VLMbench/
-conda activate pytorch
 sed -i -e 's/opencv-python==4.2.0.32/opencv-python/g' requirements.txt
 pip install -r requirements.txt
 pip install absl-py kornia num2words
