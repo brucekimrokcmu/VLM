@@ -24,7 +24,7 @@ class PickModel(nn.Module):
       # print(swapped_img.shape)
       rotated_img = TF.rotate(swapped_img, angle, torchvision.transforms.InterpolationMode.BILINEAR)
       # Un-rotate output
-      out = self.model.forward(rotated_img, language_command[:1])
+      out = self.model(rotated_img, language_command[:1])
       out = TF.rotate(out, -angle, torchvision.transforms.InterpolationMode.BILINEAR)
       out_all.append(out)
     out_all = torch.cat(out_all, dim=1)

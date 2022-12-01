@@ -52,7 +52,7 @@ def main(args):
     assert len(val_loader)>0, "ERROR: Empty val loader"
 
         
-    agent = PickAgent(num_rotations = 8, lr=args.lr)
+    agent = PickAgent(num_rotations = 1, lr=args.lr)
 
     # model = TwoStreamClipLingUNetLatTransporterAgent(name="cliport_6dof",device=device, cfg=cfg, z_roll_pitch=True)
     # END REF
@@ -180,7 +180,8 @@ def train(data_loader, agent, epoch, losses, args, timer, device):
         # update time tracking
         batch_time.update(time.time() - end)
         end = time.time()
-
+        # Compute total loss
+        total_loss.append(sum(l.item() for l in loss_dict.values()))
         # log outputs at given frequency
         if i % args.log_freq == 0:
             time_left = sec_to_str((len(data_loader)-i-1) * batch_time.avg + (args.epochs-epoch-1) * batch_time.avg * len(data_loader))
@@ -191,9 +192,9 @@ def train(data_loader, agent, epoch, losses, args, timer, device):
             # for loss_term in losses:
             #     tmp_str += '{}: {loss.val:.4f} ({loss.avg:.4f})  '.format(loss_term, loss=losses[loss_term])
             tmp_str += 'Avg Loss: {}  '.format(torch.tensor(total_loss).mean(0, keepdim=True))
+            tmp_str += 'LR: {}  '.format(float(agent.optimizer.param_groups[0]['lr']))
             print(tmp_str)
-        
-        total_loss.append(sum(l.item() for l in loss_dict.values()))
+        break # For single datum
     avg_loss = torch.tensor(total_loss).mean(0, keepdim=True).to(device)
 
     return losses, avg_loss
@@ -227,6 +228,7 @@ def val(data_loader, agent, args, epoch, device):
             losses[loss_term].update(loss_dict[loss_term].item(), args.batch_size)
         
         total_loss.append(sum(l.item() for l in loss_dict.values()))
+        break # For single datum
     
     avg_loss = torch.mean(torch.FloatTensor(total_loss), dim=0, keepdim=True).to(device)
 
@@ -260,7 +262,7 @@ if __name__=="__main__":
     
     #Training
     parser.add_argument('--start_epoch', default=0, type=int)
-    parser.add_argument('--epochs', default=15, type=int, help='total epochs(default: 15)')
+    parser.add_argument('--epochs', default=100, type=int, help='total epochs(default: 100)')
     parser.add_argument('--log-freq', default=1, type=int, help='print log message at this many iterations (default: 1)')
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR', help='learning rate for Adam optimizer (default: 0.001)')
     parser.add_argument('--checkpoint_path', default='/home/ubuntu/VLM/checkpoint', type=str, metavar='PATH', help='path to latest checkpoint (default: /checkpoints)')

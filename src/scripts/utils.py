@@ -78,14 +78,12 @@ def FormatInput(batch_data):
     return inp
 
 def convert_angle_to_channel(angle_deg, num_rotations):
-    i = angle_deg * num_rotations // 360
+    i = int((angle_deg * num_rotations) // 360)
     return i
 
 def get_affordance_map_from_formatted_input(x, y, rotation_deg, output_size):
     num_rotations = output_size[0]
     rotation_channel = convert_angle_to_channel(rotation_deg, num_rotations)
     affordance_map = torch.zeros(output_size)
-    print(x)
-    print(y)
     affordance_map[rotation_channel, x, y] = 1
     return affordance_map
