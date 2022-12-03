@@ -36,6 +36,23 @@ class PickAgent:
         # self.scheduler.step(loss)
         return loss
     
-    def eval(self, inp_dict):
-        pass
+    def eval_agent(self, inp):
+        self.model.eval()
+        with torch.no_grad():
+            p0 = inp['p0']
+            yaw_deg = inp['p0_theta']
+            output_size = (self.num_rotations, 320, 160)
+
+            pick_demonstration = get_affordance_map_from_formatted_input(x=p0[0], y=p0[1], rotation_deg=yaw_deg, output_size=output_size)
+            device = 'cuda'
+            img_cuda = torch.Tensor(inp['img']).to(device)
+            language_cuda = inp['lang_goal']
+       
+            affordances = self.model(img_cuda, language_cuda)
+            affordances = affordances.view(affordances.shape[0], -1)
+            pick_demonstration = torch.unsqueeze(pick_demonstration, dim=0).to(device)
+            pick_demonstration = pick_demonstration.view(pick_demonstration.shape[0], -1)
+            loss = self.loss_fn(affordances, pick_demonstration)
+            
+        return loss
 
