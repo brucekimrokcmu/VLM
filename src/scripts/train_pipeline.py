@@ -27,15 +27,24 @@ def main(args):
     device = 'cuda'
     cudnn.benchmark = True
 
-    dataset_cfg = {"dataset":{"type": "single",
-                "images": True,
-                "cache": True,
-                "augment":{"theta_sigma":60}}}
+    train_dataset_cfg = {"dataset":{"type": "single",
+                        "images": True,
+                        "cache": True,
+                        "augment":{"theta_sigma":60},
+                        "cache_size": 350},
+                        }
 
     # load data
-    train_dataset = RavensDataset(args.train_data_dir, dataset_cfg, n_demos=1000, augment=True)
+    train_dataset = RavensDataset(args.train_data_dir, train_dataset_cfg, n_demos=1000, augment=True)
 
-    val_dataset = RavensDataset(args.val_data_dir, dataset_cfg, n_demos=100, augment=False)
+    val_dataset_cfg = {"dataset":{"type": "single",
+                    "images": True,
+                    "cache": False,
+                    "augment":{"theta_sigma":60},
+                    "cache_size": 0},
+                    }
+
+    val_dataset = RavensDataset(args.val_data_dir, val_dataset_cfg, n_demos=100, augment=False)
     
     assert len(train_dataset)>0, "ERROR: Empty train dataset"
     assert len(val_dataset)>0, "ERROR: Empty val dataset"
@@ -89,8 +98,8 @@ def main(args):
         # save the model
         save_name = args.checkpoint_path+'/checkpoint_{}'.format(args.checkpoint_name)
         
-        if val_losses['val_total_loss'].avg < best_val_loss:
-            best_val_loss = val_losses['val_total_loss'].avg
+        if val_losses['val_total_loss'] < best_val_loss:
+            best_val_loss = val_losses['val_total_loss']
             torch.save({
                 'epoch': epoch + 1,
                 'state_dict': agent.model.state_dict(),
@@ -98,7 +107,8 @@ def main(args):
                 # 'scheduler':agent.scheduler.state_dict(),
                 }, save_name + '_best'+ '.pth')
             print("New best model saved")
-        if epoch % 10 == 0:
+
+        if epoch % 100 == 0:
             torch.save({
                 'epoch': epoch + 1,
                 'state_dict': agent.model.state_dict(),
@@ -125,21 +135,23 @@ def train(data_loader, agent, epoch, args, timer):
     
     average_losses = {}
     
+    itrs_per_epoch = 100
+
     end = time.time()
-    for i in range(1000):
+    for i in range(itrs_per_epoch):
         batch_data = next(iter(data_loader))
         inp, _ = batch_data
 
         loss_dict = {}
-        loss_dict['attention_loss'] = agent.train_agent(inp)
-        loss_dict['total_loss'] = sum(l.item() for l in loss_dict.values())
+        loss_dict['attention_loss'] = agent.train_agent(inp).item()
+        loss_dict['total_loss'] = sum(l for l in loss_dict.values())
 
         if average_losses == {}:
             for loss_term in loss_dict:
                 average_losses[loss_term] = AverageMeter(loss_term)
 
         for loss_term in loss_dict:
-            average_losses[loss_term].update(loss_dict[loss_term].item(), 1)
+            average_losses[loss_term].update(loss_dict[loss_term], 1)
 
         # update time tracking
         batch_time.update(time.time() - end)
@@ -147,12 +159,12 @@ def train(data_loader, agent, epoch, args, timer):
 
         # log outputs at given frequency
         if i % args.log_freq == 0:
-            time_left = sec_to_str((100-i-1) * batch_time.avg + (args.epochs-epoch-1) * batch_time.avg * 100)
+            time_left = sec_to_str((itrs_per_epoch-i-1) * batch_time.avg + (args.epochs-epoch-1) * batch_time.avg * itrs_per_epoch)
             tmp_str = 'Epoch: [{}/{}] Batch: [{}/{}]  ' \
                         'Time {batch_time.val:.3f} ({batch_time.avg:.3f})  ' \
                         'ETA: {} '.format(
-                        epoch + 1, args.epochs, i, 100, time_left, batch_time=batch_time)
-            tmp_str += 'Train Avg Loss: {}  '.format(average_losses['total_loss'])
+                        epoch + 1, args.epochs, i, itrs_per_epoch, time_left, batch_time=batch_time)
+            tmp_str += 'Train Avg Loss: {}  '.format(average_losses['total_loss'].avg)
             print(tmp_str)
         
     return average_losses
@@ -161,22 +173,22 @@ def train(data_loader, agent, epoch, args, timer):
 def val(data_loader, agent):
     average_losses = {}
 
-    for _ in range(10):
+    for _ in range(100):
         batch_data = next(iter(data_loader))
         inp, _ = batch_data
 
         loss_dict = {}
-        loss_dict['attention_loss'] = agent.eval_agent(inp)
-        loss_dict['total_loss'] = sum(l.item() for l in loss_dict.values())
+        loss_dict['attention_loss'] = agent.eval_agent(inp).item()
+        loss_dict['total_loss'] = sum(l for l in loss_dict.values())
 
         if average_losses == {}:
             for loss_term in loss_dict:
                 average_losses[loss_term] = AverageMeter(loss_term)
 
         for loss_term in loss_dict:
-            average_losses[loss_term].update(loss_dict[loss_term].item(), 1)
+            average_losses[loss_term].update(loss_dict[loss_term], 1)
                 
-    print('Validation Avg Loss: {}  '.format(average_losses['total_loss']))
+    print('Validation Avg Loss: {}  '.format(average_losses['total_loss'].avg))
     return average_losses
 
 if __name__=="__main__":
@@ -190,7 +202,7 @@ if __name__=="__main__":
     
     #Training
     parser.add_argument('--start_epoch', default=0, type=int)
-    parser.add_argument('--epochs', default=200, type=int, help='total epochs(default: 200)')
+    parser.add_argument('--epochs', default=2000, type=int, help='total epochs(default: 200)')
     parser.add_argument('--log-freq', default=10, type=int, help='print log message at this many iterations (default: 1)')
     parser.add_argument('--lr', type=float, default=0.0001, metavar='LR', help='learning rate for Adam optimizer (default: 0.001)')
     parser.add_argument('--checkpoint_path', default='/home/ubuntu/VLM/checkpoint', type=str, metavar='PATH', help='path to latest checkpoint (default: /checkpoints)')
