@@ -20,11 +20,11 @@ class PickModel(nn.Module):
       angle = i * 360/self.num_rotations
       
       # print(type(rgb_ddd_img[0]))
-      swapped_img = torch.unsqueeze(torch.swapaxes(torch.swapaxes(rgb_ddd_img[0], 1, 2), 0, 1), dim=0) 
+      swapped_img = torch.unsqueeze(rgb_ddd_img.permute(2,0,1), dim=0) 
       # print(swapped_img.shape)
       rotated_img = TF.rotate(swapped_img, angle, torchvision.transforms.InterpolationMode.BILINEAR)
       # Un-rotate output
-      out = self.model.forward(rotated_img, language_command[:1])
+      out = self.model(rotated_img, [language_command])
       out = TF.rotate(out, -angle, torchvision.transforms.InterpolationMode.BILINEAR)
       out_all.append(out)
     out_all = torch.cat(out_all, dim=1)
