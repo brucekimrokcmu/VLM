@@ -20,12 +20,8 @@ class PlaceModel(nn.Module):
         )
 
     def forward(self, rgb_ddd_img, language_command, pick_location):
-        # TODO: Support batch size greater than 1 in place model
-        assert (
-            rgb_ddd_img.shape[0] == 1
-        ), "Place model currently only supports a batch size of 1"
-
-        query_tensor = self.query_net(rgb_ddd_img, language_command)
+        rgb_ddd_img = torch.unsqueeze(rgb_ddd_img.permute(2,0,1), dim=0) 
+        query_tensor = self.query_net(rgb_ddd_img, [language_command])
         
         large_crop_dim = int(2**0.5 * self.crop_size)  # Hypotenuse length
         large_crop = TF.crop(
@@ -56,7 +52,7 @@ class PlaceModel(nn.Module):
         all_crops = all_crops[:, 0]
 
         # Key net forward
-        key_tensor = self.key_net(rgb_ddd_img, language_command)
+        key_tensor = self.key_net(rgb_ddd_img, [language_command])
         # Cross correlation
         out = nn.functional.conv2d(key_tensor, all_crops, padding='same')
         return out

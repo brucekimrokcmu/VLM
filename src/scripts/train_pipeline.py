@@ -15,6 +15,7 @@ from utils import AverageMeter, sec_to_str
 CURRENT_DIR = dirname(abspath(__file__))
 sys.path.insert(0, join(CURRENT_DIR, '../..'))  # Import local models
 from agents.PickAgent import PickAgent
+from agents.PlaceAgent import PlaceAgent
 warnings.filterwarnings('ignore')
 
 # Import helper funtions
@@ -49,7 +50,13 @@ def main(args):
     assert len(train_dataset)>0, "ERROR: Empty train dataset"
     assert len(val_dataset)>0, "ERROR: Empty val dataset"
 
-    agent = PickAgent(num_rotations = 1, lr=args.lr)
+    if args.model == 'pick':
+        agent = PickAgent(num_rotations = 1, lr=args.lr)
+    elif args.model == 'place':
+        agent = PlaceAgent(num_rotations = args.num_rotations, lr=args.lr)
+    else:
+        raise NotImplementedError
+
     agent.model = agent.model.to(device)
     
     # if resuming training, load states
@@ -59,8 +66,9 @@ def main(args):
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             agent.model.load_state_dict(checkpoint['state_dict'])
-            # optimizer.load_state_dict(checkpoint['optimizer'])
-            # scheduler.load_state_dict(checkpoint['scheduler'])
+            agent.optimizer.load_state_dict(checkpoint['optimizer'])
+            if agent.scheduler is not None:
+                agent.scheduler.load_state_dict(checkpoint['scheduler'])
             del checkpoint
             gc.collect()
             torch.cuda.empty_cache()
@@ -86,12 +94,16 @@ def main(args):
         # evaluate agent
         val_losses = val(val_dataset, agent)
         val_losses = {'val_'+l_t:l.avg for l_t,l in val_losses.items()}
+
+        if agent.scheduler is not None:
+            agent.scheduler.step(val_losses['val_total_loss'])
         
         # log to WandB
         if args.wandb:
             try:
                 # TODO: Handle reinitialization
-                wandb.log({**train_losses, **val_losses})
+                wandb.log({**train_losses, **val_losses, 
+                            "lr":float(agent.optimizer.param_groups[0]['lr'])})
             except Exception as e:
                 print(traceback.print_exc(), file=sys.stderr)
 
@@ -212,6 +224,8 @@ if __name__=="__main__":
     parser.add_argument('--wandb_entity', type=str, default="11785-vlm", help="visualize the training. Account Name")
     parser.add_argument('--wandb_project', type=str, default="11785-Final-Project",  help="visualize the training. Project Name")
     parser.add_argument('--wandb_key', type=str, default="11785-Final-Project",  help="visualize the training. Project key")
+    parser.add_argument('--model', type=str, default="place",  help="pick or place (default: pick)")
+    parser.add_argument('--num_rotations', type=int, default="12",  help="number of rotations if model is place (pick always uses 1 rotation)")
 
     args = parser.parse_args()
     

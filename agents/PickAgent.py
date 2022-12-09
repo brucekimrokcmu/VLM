@@ -7,7 +7,12 @@ class PickAgent:
         self.model = PickModel(num_rotations=num_rotations, batchnorm = False)
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
-        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,  
+                                                                    'min', 
+                                                                    factor=0.5, 
+                                                                    patience=5, 
+                                                                    threshold=0.1,
+                                                                    threshold_mode='abs')
         self.num_rotations = num_rotations
     
     # inp.keys() = dict_keys(['img', 'p0', 'p0_theta', 'p1', 'p1_theta', 'perturb_params', 'lang_goal'])
@@ -33,7 +38,6 @@ class PickAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        # self.scheduler.step(loss)
         return loss
     
     def eval_agent(self, inp):
