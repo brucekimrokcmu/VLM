@@ -60,11 +60,11 @@ class SemanticStream(nn.Module):
         sentence_embedding = self.clip_model.embed_sentence(language_command)
         sentence_embedding = sentence_embedding.unsqueeze(1).unsqueeze(1)
 
-        lang_tile1 = torch.tile(self.linear1(sentence_embedding), (1,7,7,1))
+        lang_tile1 = torch.tile(self.linear1(sentence_embedding), (1,10,5,1))
         lang_tile1 = lang_tile1.permute(0,3,1,2)
-        lang_tile2 = torch.tile(self.linear2(sentence_embedding), (1,14,14,1))
+        lang_tile2 = torch.tile(self.linear2(sentence_embedding), (1,20,10,1))
         lang_tile2 = lang_tile2.permute(0,3,1,2)
-        lang_tile3 = torch.tile(self.linear3(sentence_embedding), (1,28,28,1))
+        lang_tile3 = torch.tile(self.linear3(sentence_embedding), (1,40,20,1))
         lang_tile3 = lang_tile3.permute(0,3,1,2)
 
         # Need to do transpose

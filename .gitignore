@@ -131,3 +131,7 @@ dmypy.json
 # vscode
 .vscode/
 
+# Ignore dataset
+dataset/
+checkpoint/
+wandb/
