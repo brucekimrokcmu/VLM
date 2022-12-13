@@ -135,3 +135,6 @@ dmypy.json
 dataset/
 checkpoint/
 wandb/
+*.pth
+*.mp4
+
