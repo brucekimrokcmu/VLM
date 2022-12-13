@@ -77,8 +77,8 @@ class SpatialStream(nn.Module):
       )
       # 1x conv & identity & downsample
       self.down = nn.Sequential(
-          ConvBlock(32, 16, 1, self.batchnorm, self.channels_out),
-          ConvBlock(self.channels_out, 16, 1, self.batchnorm, self.channels_out, True),
+          ConvBlock(32, 16, 1, self.batchnorm, self.channels_out, output_act=nn.Identity),
+          ConvBlock(self.channels_out, 16, 1, self.batchnorm, self.channels_out, True, output_act=nn.Identity),
       )
 
     def forward(self, rgb_ddd_img):
