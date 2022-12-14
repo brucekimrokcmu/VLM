@@ -62,11 +62,11 @@ class TestSpatialSemanticStream(unittest.TestCase):
         rgb_ddd_img = torch.randn(1, 6, 224, 224).to(device)
         language_command = ["Test language command"]
 
-        self.pick_model = SpatialSemanticStream.SpatialSemanticStream(channels_in=6, pick=True, batchnorm=False).to(device)
+        self.pick_model = SpatialSemanticStream.SpatialSemanticStream(channels_in=6, pick=True).to(device)
         output = self.pick_model(rgb_ddd_img, language_command)
         self.assertEqual(output.shape, torch.Size((1, 1, 224, 224)))
 
-        self.place_model = SpatialSemanticStream.SpatialSemanticStream(channels_in=6, pick=False, batchnorm=False).to(device)
+        self.place_model = SpatialSemanticStream.SpatialSemanticStream(channels_in=6, pick=False).to(device)
         output = self.place_model(rgb_ddd_img, language_command)
         self.assertEqual(output.shape, torch.Size((1, 3, 224, 224)))
 
@@ -75,7 +75,7 @@ class TestPickModel(unittest.TestCase):
         rgb_ddd_img = torch.randn(1, 6, 224, 224).to(device)
         language_command = ["Test language command"]
 
-        self.model = PickModel.PickModel(num_rotations=16, batchnorm=False).to(device)
+        self.model = PickModel.PickModel(num_rotations=16).to(device)
         output = self.model(rgb_ddd_img, language_command)
         self.assertEqual(output.shape, torch.Size((1, 16, 224, 224)))
 
@@ -85,7 +85,7 @@ class TestPlaceModel(unittest.TestCase):
         language_command = ["Test language command"]
         pick_locations = [(0,0), (224,224), (100, 100)]
 
-        self.model = PlaceModel.PlaceModel(num_rotations=16, crop_size=9, batchnorm=False).to(device)
+        self.model = PlaceModel.PlaceModel(num_rotations=16, crop_size=9).to(device)
         for pick_location in pick_locations:
             output = self.model(rgb_ddd_img, language_command, pick_location)
             self.assertEqual(output.shape, torch.Size((1, 16, 224, 224)))

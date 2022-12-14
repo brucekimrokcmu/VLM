@@ -4,7 +4,7 @@ from src.scripts.utils import get_affordance_map_from_formatted_input
 class PickAgent:
     def __init__(self, num_rotations, lr, clip_model):
         # Pick model, also with loss functions
-        self.model = PickModel(num_rotations=num_rotations, clip_model=clip_model, batchnorm = False)
+        self.model = PickModel(num_rotations=num_rotations, clip_model=clip_model)
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
         # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,  

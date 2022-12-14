@@ -8,12 +8,11 @@ from models.blocks.UpBlock import UpBlock
 from cliport.utils import utils
 
 class SemanticStream(nn.Module):
-    def __init__(self, channels_out, clip_model, batchnorm = False):
+    def __init__(self, channels_out, clip_model):
         super().__init__()
         self.clip_model = clip_model
 
         self.channels_out = channels_out
-        self.batchnorm = batchnorm
 
         self.conv1 = nn.Sequential(nn.Conv2d(2048, 1024, 3, 1, 1), nn.ReLU())
 
@@ -32,22 +31,21 @@ class SemanticStream(nn.Module):
         self.fuse_lat_4 = nn.Conv2d(64+32, 32, 1)
         self.fuse_lat_5 = nn.Conv2d(32+16, 16, 1)
 
-        self.batchnorm = True
         self.decoder4 = nn.Sequential(
-          ConvBlock(128, 64, 1, self.batchnorm),
-          ConvBlock(64, 64, 1, self.batchnorm, residual=True),
+          ConvBlock(128, 64, 1),
+          ConvBlock(64, 64, 1, residual=True),
           nn.UpsamplingBilinear2d(scale_factor=2)
         )
 
         self.decoder5 = nn.Sequential(
-            ConvBlock(64, 32, 1, self.batchnorm),
-            ConvBlock(32, 32, 1, self.batchnorm, residual=True),
+            ConvBlock(64, 32, 1),
+            ConvBlock(32, 32, 1, residual=True),
             nn.UpsamplingBilinear2d(scale_factor=2)
         )
 
         self.decoder6 = nn.Sequential(
-            ConvBlock(32, 16, 1, self.batchnorm),
-            ConvBlock(16, 16, 1, self.batchnorm, residual=True),
+            ConvBlock(32, 16, 1),
+            ConvBlock(16, 16, 1, residual=True),
             nn.UpsamplingBilinear2d(scale_factor=2)
         )
         

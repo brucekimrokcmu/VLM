@@ -6,7 +6,7 @@ import numpy as np
 class PlaceAgent:
     def __init__(self, num_rotations, lr, clip_model):
         # Place model, alson with loss functions
-        self.model = PlaceModel(num_rotations=num_rotations, clip_model=clip_model, crop_size=64, batchnorm = False)
+        self.model = PlaceModel(num_rotations=num_rotations, clip_model=clip_model, crop_size=64)
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
         self.scheduler = None # torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer)

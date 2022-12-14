@@ -5,10 +5,9 @@ from models.SemanticStream import SemanticStream
 from models.SpatialStream import SpatialStream
 
 class SpatialSemanticStream(nn.Module):
-  def __init__(self, channels_in, pick, clip_model, batchnorm = False):
+  def __init__(self, channels_in, pick, clip_model):
     super().__init__()
     self.channels_in = channels_in
-    self.batchnorm = batchnorm
     self.pick = pick
     if self.pick: 
         self.channels_out = 1
@@ -16,9 +15,9 @@ class SpatialSemanticStream(nn.Module):
         self.channels_out = 3
 
     # spatial
-    self.spatial = SpatialStream(self.channels_in, self.channels_out, self.batchnorm)
+    self.spatial = SpatialStream(self.channels_in, self.channels_out)
     # semantic
-    self.semantic = SemanticStream(self.channels_out, clip_model, self.batchnorm)
+    self.semantic = SemanticStream(self.channels_out, clip_model)
     # Merging
     if self.pick:
         self.merge = torch.add

@@ -7,17 +7,12 @@ from models.SpatialSemanticStream import SpatialSemanticStream
 
 
 class PlaceModel(nn.Module):
-    def __init__(self, num_rotations, clip_model, crop_size, batchnorm=False):
+    def __init__(self, num_rotations, clip_model, crop_size):
         super().__init__()
         self.num_rotations = num_rotations
         self.crop_size = crop_size
-        self.batchnorm = batchnorm
-        self.query_net = SpatialSemanticStream(
-            channels_in=6, pick=False, clip_model=clip_model, batchnorm=batchnorm
-        )
-        self.key_net = SpatialSemanticStream(
-            channels_in=6, pick=False, clip_model=clip_model, batchnorm=batchnorm
-        )
+        self.query_net = SpatialSemanticStream(channels_in=6, pick=False, clip_model=clip_model)
+        self.key_net = SpatialSemanticStream(channels_in=6, pick=False, clip_model=clip_model)
 
     def forward(self, rgb_ddd_img, language_command, pick_location):
         rgb_ddd_img = torch.unsqueeze(rgb_ddd_img.permute(2,0,1), dim=0) 
