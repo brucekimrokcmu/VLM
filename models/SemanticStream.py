@@ -65,7 +65,7 @@ class SemanticStream(nn.Module):
         # Need to do transpose
         rgb_ddd_img = utils.preprocess(rgb_ddd_img, dist='clip')
         rgb_img = rgb_ddd_img[:,:3,:,:]
-        layer1, layer2, layer3, layer4 = self.clip_model(rgb_img.half())
+        layer1, layer2, layer3, layer4 = self.clip_model.forward(rgb_img.half())
 
         x = self.conv1(layer4)
         x = x * lang_tile1

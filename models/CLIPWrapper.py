@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 import clip
 
-class CLIPWrapper(nn.Module):
+class CLIPWrapper():
     def __init__(self, device="cuda"):
-        super().__init__()
         self.clip_model, self.preprocess = clip.load("RN50", device=device)
         modified_resnet = list(self.clip_model.children())[0]
         self.modified_resnet = torch.nn.Sequential(*list(modified_resnet.children())[:-1])
@@ -14,7 +13,8 @@ class CLIPWrapper(nn.Module):
             param.requires_grad = False
     
     def forward(self, rgb_image):
-        with torch.no_grad():
+        self.modified_resnet.eval()
+        with torch.inference_mode():
             head = self.modified_resnet[0:10](rgb_image.half())
             layer1 = self.modified_resnet[10](head)
             layer2 = self.modified_resnet[11](layer1)
@@ -23,6 +23,8 @@ class CLIPWrapper(nn.Module):
         return layer1.float(), layer2.float(), layer3.float(), layer4.float()
     
     def embed_sentence(self, language_commands):
-        tokens = torch.cat([clip.tokenize(c for c in language_commands)]).to(self.device)
-        sentence_embedding = self.clip_model.encode_text(tokens)
+        self.clip_model.eval()
+        with torch.inference_mode():
+            tokens = torch.cat([clip.tokenize(c for c in language_commands)]).to(self.device)
+            sentence_embedding = self.clip_model.encode_text(tokens)
         return sentence_embedding.float()

@@ -1,6 +1,6 @@
 from models.PlaceModel import PlaceModel
 import torch
-from src.scripts.utils import convert_angle_to_channel, get_affordance_map_from_formatted_input
+from src.scripts.utils import get_affordance_map_from_formatted_input
 import numpy as np
 
 class PlaceAgent:
@@ -37,14 +37,15 @@ class PlaceAgent:
         loss.backward()
         self.optimizer.step()
         # self.scheduler.step(loss)
-        return loss
+        return loss.item()
     
     def eval_agent(self, inp):
         self.model.eval()
         with torch.no_grad():
             p0 = inp['p0']
             p1 = inp['p1']
-            p1_deg = inp['p1_theta']
+            p1_rad = inp['p1_theta']
+            p1_deg = np.rad2deg(p1_rad)
             output_size = (self.num_rotations, 320, 160)
 
             place_demonstration = get_affordance_map_from_formatted_input(x=p1[0], y=p1[1], rotation_deg=p1_deg, output_size=output_size)
@@ -57,4 +58,4 @@ class PlaceAgent:
             place_demonstration = place_demonstration.view(place_demonstration.shape[0], -1)
             loss = self.loss_fn(affordances, place_demonstration)
             
-        return loss
+        return loss.item()
