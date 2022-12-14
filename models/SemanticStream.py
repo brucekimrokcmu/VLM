@@ -2,14 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.CLIPWrapper import CLIPWrapper
 from models.blocks.ConvBlock import ConvBlock
 from models.blocks.UpBlock import UpBlock
 
+from cliport.utils import utils
+
 class SemanticStream(nn.Module):
-    def __init__(self, channels_out, batchnorm = False):
+    def __init__(self, channels_out, clip_model, batchnorm = False):
         super().__init__()
-        self.clip_model = CLIPWrapper()
+        self.clip_model = clip_model
 
         self.channels_out = channels_out
         self.batchnorm = batchnorm
@@ -52,7 +53,7 @@ class SemanticStream(nn.Module):
         
         self.down = nn.Conv2d(16, self.channels_out, kernel_size=1)
     
-    def forward(self, rgb_image, language_command, lateral_outs):
+    def forward(self, rgb_ddd_img, language_command, lateral_outs):
         sentence_embedding = self.clip_model.embed_sentence(language_command)
         sentence_embedding = sentence_embedding.unsqueeze(1).unsqueeze(1)
 
@@ -64,8 +65,9 @@ class SemanticStream(nn.Module):
         lang_tile3 = lang_tile3.permute(0,3,1,2)
 
         # Need to do transpose
-        
-        layer1, layer2, layer3, layer4 = self.clip_model(rgb_image.half())
+        rgb_ddd_img = utils.preprocess(rgb_ddd_img, dist='clip')
+        rgb_img = rgb_ddd_img[:,:3,:,:]
+        layer1, layer2, layer3, layer4 = self.clip_model(rgb_img.half())
 
         x = self.conv1(layer4)
         x = x * lang_tile1

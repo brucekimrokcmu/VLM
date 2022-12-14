@@ -1,18 +1,19 @@
 from models.PickModel import PickModel
 import torch
-from src.scripts.utils import convert_angle_to_channel, get_affordance_map_from_formatted_input
+from src.scripts.utils import get_affordance_map_from_formatted_input
 class PickAgent:
-    def __init__(self, num_rotations, lr):
-        # Pick model, alson with loss functions
-        self.model = PickModel(num_rotations=num_rotations, batchnorm = False)
+    def __init__(self, num_rotations, lr, clip_model):
+        # Pick model, also with loss functions
+        self.model = PickModel(num_rotations=num_rotations, clip_model=clip_model, batchnorm = False)
         self.loss_fn = torch.nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,  
-                                                                    'min', 
-                                                                    factor=0.5, 
-                                                                    patience=5, 
-                                                                    threshold=0.1,
-                                                                    threshold_mode='abs')
+        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,  
+        #                                                             'min', 
+        #                                                             factor=0.5, 
+        #                                                             patience=5, 
+        #                                                             threshold=0.1,
+        #                                                             threshold_mode='abs')
+        self.scheduler = None
         self.num_rotations = num_rotations
     
     # inp.keys() = dict_keys(['img', 'p0', 'p0_theta', 'p1', 'p1_theta', 'perturb_params', 'lang_goal'])
@@ -38,7 +39,7 @@ class PickAgent:
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return loss
+        return loss.item()
     
     def eval_agent(self, inp):
         self.model.eval()
@@ -58,5 +59,5 @@ class PickAgent:
             pick_demonstration = pick_demonstration.view(pick_demonstration.shape[0], -1)
             loss = self.loss_fn(affordances, pick_demonstration)
             
-        return loss
+        return loss.item()
 

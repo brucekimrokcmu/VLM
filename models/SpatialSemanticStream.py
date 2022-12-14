@@ -5,7 +5,7 @@ from models.SemanticStream import SemanticStream
 from models.SpatialStream import SpatialStream
 
 class SpatialSemanticStream(nn.Module):
-  def __init__(self, channels_in, pick, batchnorm = False):
+  def __init__(self, channels_in, pick, clip_model, batchnorm = False):
     super().__init__()
     self.channels_in = channels_in
     self.batchnorm = batchnorm
@@ -14,13 +14,11 @@ class SpatialSemanticStream(nn.Module):
         self.channels_out = 1
     else: 
         self.channels_out = 3
-    self._make_layers()
 
-  def _make_layers(self):
     # spatial
     self.spatial = SpatialStream(self.channels_in, self.channels_out, self.batchnorm)
     # semantic
-    self.semantic = SemanticStream(self.channels_out, self.batchnorm)
+    self.semantic = SemanticStream(self.channels_out, clip_model, self.batchnorm)
     # Merging
     if self.pick:
         self.merge = torch.add
@@ -29,8 +27,7 @@ class SpatialSemanticStream(nn.Module):
 
   def forward(self, rgb_ddd_img, language_command):
     out_spatial, lateral_outs = self.spatial(rgb_ddd_img)
-    rgb_image = rgb_ddd_img[:,:3,:,:]
-    out_semantics = self.semantic(rgb_image, language_command, lateral_outs)
+    out_semantics = self.semantic(rgb_ddd_img, language_command, lateral_outs)
     if self.pick:
         out_semantics = self.merge(out_spatial, out_semantics)
     else: 

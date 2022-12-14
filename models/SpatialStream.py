@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from cliport.utils import utils
 
 from models.blocks.ConvBlock import ConvBlock
 
@@ -74,7 +75,7 @@ class SpatialStream(nn.Module):
 
     def forward(self, rgb_ddd_img):
       # Conv
-
+      rgb_ddd_img = utils.preprocess(rgb_ddd_img, dist='transporter')
       out = self.conv(rgb_ddd_img)
       #Encoder
       for encode in [self.encoder1, self.encoder2, self.encoder3, self.encoder4, self.encoder5]:

@@ -7,10 +7,10 @@ from torchvision import datasets, transforms
 from models.SpatialSemanticStream import SpatialSemanticStream
 
 class PickModel(nn.Module):
-  def __init__(self, num_rotations, batchnorm = False):
+  def __init__(self, num_rotations, clip_model, batchnorm = False):
     super().__init__()
     self.num_rotations = num_rotations
-    self.model = SpatialSemanticStream(channels_in=6, pick=True, batchnorm=batchnorm) 
+    self.model = SpatialSemanticStream(channels_in=6, pick=True, clip_model=clip_model, batchnorm=batchnorm) 
     self.tensor_to_PIL = transforms.ToPILImage()   
 
   def forward(self, rgb_ddd_img, language_command):

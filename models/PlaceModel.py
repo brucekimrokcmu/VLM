@@ -7,16 +7,16 @@ from models.SpatialSemanticStream import SpatialSemanticStream
 
 
 class PlaceModel(nn.Module):
-    def __init__(self, num_rotations, crop_size, batchnorm=False):
+    def __init__(self, num_rotations, clip_model, crop_size, batchnorm=False):
         super().__init__()
         self.num_rotations = num_rotations
         self.crop_size = crop_size
         self.batchnorm = batchnorm
         self.query_net = SpatialSemanticStream(
-            channels_in=6, pick=False, batchnorm=batchnorm
+            channels_in=6, pick=False, clip_model=clip_model, batchnorm=batchnorm
         )
         self.key_net = SpatialSemanticStream(
-            channels_in=6, pick=False, batchnorm=batchnorm
+            channels_in=6, pick=False, clip_model=clip_model, batchnorm=batchnorm
         )
 
     def forward(self, rgb_ddd_img, language_command, pick_location):
