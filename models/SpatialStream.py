@@ -33,44 +33,35 @@ class SpatialStream(nn.Module):
           ConvBlock(256, 256, 1, self.batchnorm, False, True)
       )
       self.encoder4 = nn.Sequential(
-          ConvBlock(256, 256, 2, self.batchnorm),
-          ConvBlock(256, 256, 1, self.batchnorm, False, True)
-      )
-      self.encoder5 = nn.Sequential(
           ConvBlock(256, 512, 2, self.batchnorm),
           ConvBlock(512, 512, 1, self.batchnorm, False, True)
       )
-      self.encoder6 = nn.Sequential(
+      self.encoder5 = nn.Sequential(
           ConvBlock(512, 1024, 2, self.batchnorm),
           ConvBlock(1024, 1024, 1, self.batchnorm, False, True)
       )
-      # Decoder: 6x conv & identity & upsample
+
       self.decoder1 = nn.Sequential(
-          ConvBlock(1024, 1024, 1, self.batchnorm),
-          ConvBlock(1024, 1024, 1, self.batchnorm, False, True),
-          nn.UpsamplingBilinear2d(scale_factor=2)
-      )
-      self.decoder2 = nn.Sequential(
           ConvBlock(1024, 512, 1, self.batchnorm),
           ConvBlock(512, 512, 1, self.batchnorm, False, True),
           nn.UpsamplingBilinear2d(scale_factor=2)
       )
-      self.decoder3 = nn.Sequential(
+      self.decoder2 = nn.Sequential(
           ConvBlock(512, 256, 1, self.batchnorm),
           ConvBlock(256, 256, 1, self.batchnorm, False, True),
           nn.UpsamplingBilinear2d(scale_factor=2)
       )
-      self.decoder4 = nn.Sequential(
+      self.decoder3 = nn.Sequential(
           ConvBlock(256, 128, 1, self.batchnorm),
           ConvBlock(128, 128, 1, self.batchnorm, False, True),
           nn.UpsamplingBilinear2d(scale_factor=2)
       )
-      self.decoder5 = nn.Sequential(
+      self.decoder4 = nn.Sequential(
           ConvBlock(128, 64, 1, self.batchnorm),
           ConvBlock(64, 64, 1, self.batchnorm, False, True),
           nn.UpsamplingBilinear2d(scale_factor=2)
       )
-      self.decoder6 = nn.Sequential(
+      self.decoder5 = nn.Sequential(
           ConvBlock(64, 32, 1, self.batchnorm),
           ConvBlock(32, 32, 1, self.batchnorm, False, True),
           nn.UpsamplingBilinear2d(scale_factor=2)
@@ -86,11 +77,11 @@ class SpatialStream(nn.Module):
 
       out = self.conv(rgb_ddd_img)
       #Encoder
-      for encode in [self.encoder1, self.encoder2, self.encoder3, self.encoder4, self.encoder5, self.encoder6]:
+      for encode in [self.encoder1, self.encoder2, self.encoder3, self.encoder4, self.encoder5]:
         out = encode(out)
       #Decoder
-      lateral_out = []
-      for decode in [self.decoder1, self.decoder2, self.decoder3, self.decoder4, self.decoder5, self.decoder6]:
+      lateral_out = [out]
+      for decode in [self.decoder1, self.decoder2, self.decoder3, self.decoder4, self.decoder5]:
         out = decode(out)
         lateral_out.append(out)
       # Downsample

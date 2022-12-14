@@ -14,11 +14,12 @@ class CLIPWrapper(nn.Module):
             param.requires_grad = False
     
     def forward(self, rgb_image):
-        head = self.modified_resnet[0:10](rgb_image.half())
-        layer1 = self.modified_resnet[10](head)
-        layer2 = self.modified_resnet[11](layer1)
-        layer3 = self.modified_resnet[12](layer2)
-        layer4 = self.modified_resnet[13](layer3)
+        with torch.no_grad():
+            head = self.modified_resnet[0:10](rgb_image.half())
+            layer1 = self.modified_resnet[10](head)
+            layer2 = self.modified_resnet[11](layer1)
+            layer3 = self.modified_resnet[12](layer2)
+            layer4 = self.modified_resnet[13](layer3)
         return layer1.float(), layer2.float(), layer3.float(), layer4.float()
     
     def embed_sentence(self, language_commands):
