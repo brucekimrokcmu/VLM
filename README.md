@@ -1,2 +1,4 @@
 # VLM
 Vision and Language Manipulation
+
+This repository is a reimplementation of the cliport vision and language manipulation imitation learning model. All of the pytorch modules can be found in the models directory. The eval_notebooks folder contains jupyter notebooks for evaluating a trained agent and for viewing pick and place affordance maps. The tests folder contains a series of unit tests for checking the input and output sizes of the models. The PickPlaceAgent.py file contains the actual code for a cliport agent, with functions for training, evaluating, and for generating actions. Utils.py contains utils such as classes for keeping track of average statistics and functions for generating tensors to represent the pick and place demos as one-hot images. The train.py file contains code for actually training the agent.

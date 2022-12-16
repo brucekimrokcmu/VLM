@@ -7,8 +7,6 @@ The utilities below used substantial portions of https://github.com/eric-ai-lab/
 """
 import torch
 import datetime
-import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

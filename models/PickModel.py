@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms.functional as TF
-from torchvision import datasets, transforms
+from torchvision import transforms
 
 from models.SpatialSemanticStream import SpatialSemanticStream
 

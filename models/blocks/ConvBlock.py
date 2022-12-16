@@ -1,8 +1,6 @@
 # https://arxiv.org/pdf/2109.12098.pdf
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 
 class ConvBlock(nn.Module):
     def __init__(self, channels_in, channels_out, stride, unique_last_dim = False, residual=False, output_act=nn.ReLU):

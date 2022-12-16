@@ -5,15 +5,9 @@ import torch
 import argparse
 import warnings
 import sys
-import gc
-from os.path import join, dirname, abspath
 import traceback
-
 from utils import AverageMeter, sec_to_str
-
-CURRENT_DIR = dirname(abspath(__file__))
-sys.path.insert(0, join(CURRENT_DIR, '../..'))  # Import local models
-from agents.PickPlaceAgent import PickPlaceAgent
+from PickPlaceAgent import PickPlaceAgent
 warnings.filterwarnings('ignore')
 
 # Import helper funtions
