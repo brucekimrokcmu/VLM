@@ -1,7 +1,7 @@
 from models.PickModel import PickModel
 from models.PlaceModel import PlaceModel
 import torch
-from src.scripts.utils import get_affordance_map_from_formatted_input
+from src.utils import get_affordance_map_from_formatted_input
 import numpy as np
 from models.CLIPWrapper import CLIPWrapper
 from cliport.utils import utils
